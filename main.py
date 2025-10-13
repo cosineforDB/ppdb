@@ -758,7 +758,7 @@ def display_comparison_table():
 
 def main():
     """主程式進入點"""
-    ui.run(title="PPDB - Pesticide Properties Database", port=8080, reload=False, show=False)
+    ui.run(title="PPDB - Pesticide Properties Database", host='0.0.0.0',port=8080, reload=False, show=False)
 
 
 if __name__ == "__main__":
