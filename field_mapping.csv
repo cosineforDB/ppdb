@@ -1,0 +1,48 @@
+Class,Title,類別,農藥名稱,Sheet,Column,cell name
+GENERAL INFORMATION,Isomerism,一般資料,異構性,Identification,BH,Isomerism
+GENERAL INFORMATION,Chemical formula,一般資料,化學式,Identification,BK,Chemical formula
+GENERAL INFORMATION,Canonical SMILES,一般資料,標準 SMILES,Identification,BI,Canonical SMILES
+GENERAL INFORMATION,Isomeric SMILES,一般資料,異構 SMILES,Identification,BJ,Isomeric SMILES
+GENERAL INFORMATION,International Chemical Identifier key (InChIKey),一般資料,國際化學識別碼（InChIKey）,Identification,BL,International Chemical Identifier key (InChIKey)
+GENERAL INFORMATION,Pesticide type,一般資料,農藥類型,Identification,AT,Pesticide type
+GENERAL INFORMATION,Substance groups,一般資料,物質類別,Identification,AW,Substance group
+GENERAL INFORMATION,Mode of action,一般資料,作用機制,Identification,BB,Mode of action
+GENERAL INFORMATION,CAS RN,一般資料,CAS 登錄號,Identification,BC,CAS RN
+GENERAL INFORMATION,Molecular mass,一般資料,分子量,Identification,BN,Molecular mass
+ENVIRONMENTAL FATE,Solubility - In water at 20 °C (mg l⁻¹),環境命運,水中溶解度（20 °C，mg/L）,Fate,D,Solubility - In water at 20 degC (mg/l)
+ENVIRONMENTAL FATE,Melting point (°C),環境命運,熔點（°C）,Fate,N,Melting point (degC)
+ENVIRONMENTAL FATE,Boiling point (°C),環境命運,沸點（°C）,Fate,P,"Boiling point (deg C, 1atm)"
+ENVIRONMENTAL FATE,"Octanol-water partition coefficient at pH 7, 20 °C,Log P",環境命運,"辛醇/水分配係數（Log P，pH 7, 20 °C）",Fate,V,LogP
+ENVIRONMENTAL FATE,Dissociation constant pKa) at 25 °C,環境命運,解離常數（pKa，25 °C）,Fate,Z,Dissociation constant (pKa) at 25 degC
+ENVIRONMENTAL FATE,Vapour pressure at 20 °C (mPa),環境命運,蒸氣壓（20 °C，mPa）,Fate,AC,Vapour pressure at 20 degC (mPa)
+ENVIRONMENTAL FATE,Henry's law constant at 25 °C (Pa m³ mol⁻¹),環境命運,亨利定律常數（25 °C，Pa·m³/mol）,Fate,AE,Henry's law constant at 25 degC (Pa/m3/mol)
+ENVIRONMENTAL FATE,Soil degradation (days) (aerobic) DT₅₀ (typical),環境命運,土壤降解半衰期（典型，天）,Fate,AQ,Soil DT50 - Typical (days)
+ENVIRONMENTAL FATE,Soil degradation (days) (aerobic) DT₅₀ (lab at 20 °C),環境命運,土壤降解半衰期（實驗室，20 °C，天）,Fate,AS,Soil DT50 - Lab (days)
+ENVIRONMENTAL FATE,Soil degradation (days) (aerobic) DT₅₀ (field),環境命運,土壤降解半衰期（田間，天）,Fate,AU,Soil DT50 - Field (days)
+ENVIRONMENTAL FATE,Water-sediment DT₅₀ (days),環境命運,水-沉積物系統半衰期（天）,Fate,BP,Water-sediment DT50 (days)
+ENVIRONMENTAL FATE,Linear Koc (mL g⁻¹),環境命運,線性土壤吸附係數 Koc（mL/g）,Fate,BW,Koc (ml/g)
+ENVIRONMENTAL FATE,Freundlich Kfoc (mL g⁻¹),環境命運,Freundlich 吸附係數 Kfoc（mL/g）,Fate,CA,Kfoc (ml/g)
+ENVIRONMENTAL FATE,Bio-concentration factor BCF (l kg⁻¹),環境命運,生物濃縮係數（BCF，L/kg）,Fate,AN,Bioconcentration factor
+ECOTOXICOLOGY,Mammals - Acute oral LD₅₀ (mg kg⁻¹),生態毒理,哺乳類急性口服 LD₅₀（mg/kg）,Terrestrial Ecotox,D,Mammals - Acute oral LD50 (mg/kg BW/day)
+ECOTOXICOLOGY,Birds - Acute LD₅₀ (mg kg⁻¹),生態毒理,鳥類急性 LD₅₀（mg/kg）,Terrestrial Ecotox,N,Birds - Acute LD50 (mg/kg)
+ECOTOXICOLOGY,Earthworms - Acute 14 day LC₅₀ (mg kg⁻¹),生態毒理,蚯蚓急性 14 日 LC₅₀（mg/kg）,Terrestrial Ecotox,BH,Earthworms - Acute 14d LC50 (mg/kg)
+ECOTOXICOLOGY,"Honeybees (Apis spp.) Contact acute LD₅₀ (worst case from 24, 48 and 72 hour values - μg bee⁻¹)",生態毒理,蜜蜂接觸急性 LD₅₀（μg/蜂）,Terrestrial Ecotox,X,Honeybees - Contact acute 48hr LD50 (ug per bee)
+ECOTOXICOLOGY,Temperate Freshwater Fish - Acute 96 hour LC₅₀ (mg l⁻¹),生態毒理,溫帶淡水魚 96 小時急性 LC₅₀（mg/L）,Aquatic Ecotox,D,Fish - Acute 96hr LC50 (mg/l) - TEMPERATE
+ECOTOXICOLOGY,"Algae - Acute 72 hour EC₅₀, growth (mg l⁻¹)",生態毒理,藻類72小時急性 EC₅₀（生長，mg/L）,Aquatic Ecotox,AI,Algae - Acute 72hr EC50 growth (mg/l)
+HUMAN HEALTH AND PROTECTION,ADI - Acceptable Daily Intake (mg kg⁻¹ bw day⁻¹),人體健康與防護,可接受每日攝取量 ADI（mg/kg 體重/天）,Human,U,Acceptable Daily Intake (ADI) (mg/kg bw)
+HUMAN HEALTH AND PROTECTION,ARfD - Acute Reference Dose (mg kg⁻¹ bw day⁻¹),人體健康與防護,急性參考劑量 ARfD（mg/kg 體重/天）,Human,W,Acute Reference Dose (ARfD) (mg/kg BW/day)
+HUMAN HEALTH AND PROTECTION,AOEL - Acceptable Operator Exposure Level - Systemic (mg kg⁻¹ bw day⁻¹),人體健康與防護,可接受作業者系統性暴露量 AOEL（mg/kg 體重/天）,Human,Y,Acceptable Operator Exposure Level (AOEL) systemic
+HUMAN HEALTH AND PROTECTION,Dermal penetration studies (%),人體健康與防護,皮膚滲透率研究（%）,Human,AA,Percutaneous penetration studies (%)
+HUMAN HEALTH AND PROTECTION,Carcinogen?,人體健康與防護,致癌物？,Human,AJ,Carcinogen?
+HUMAN HEALTH AND PROTECTION,Genotoxic?,人體健康與防護,基因毒性？,Human,AK,Genotoxic?
+HUMAN HEALTH AND PROTECTION,Endocrine distrupter?,人體健康與防護,內分泌干擾物？,Human,AL,Endocrine distrupter?
+HUMAN HEALTH AND PROTECTION,Reproduction/development effects?,人體健康與防護,生殖/發育影響？,Human,AM,Reproduction/development effects?
+HUMAN HEALTH AND PROTECTION,Acetyl cholinesterase inhibitor?,人體健康與防護,乙醯膽鹼酯酶抑制劑？,Human,AN,Acetyl cholinesterase inhibitor?
+HUMAN HEALTH AND PROTECTION,Neurotoxicant?,人體健康與防護,神經毒性？,Human,AO,Neurotoxicant?
+HUMAN HEALTH AND PROTECTION,Respiratory tract irritant?,人體健康與防護,呼吸道刺激物？,Human,AP,Respiratory tract irritant?
+HUMAN HEALTH AND PROTECTION,Skin irritant?,人體健康與防護,皮膚刺激物？,Human,AQ,Skin irritant?
+HUMAN HEALTH AND PROTECTION,Skin sensitiser?,人體健康與防護,皮膚致敏物？,Human,AR,Skin sensitiser?
+HUMAN HEALTH AND PROTECTION,Eye irritant?,人體健康與防護,眼刺激物？,Human,AS,Eye irritant?
+HUMAN HEALTH AND PROTECTION,Phototoxicant?,人體健康與防護,光毒性？,Human,AT,Phototoxicant?
+HUMAN HEALTH AND PROTECTION,General human health issues,人體健康與防護,一般人類健康問題,Human,AU,General human health issues
+HUMAN HEALTH AND PROTECTION,Handling issues,人體健康與防護,處理問題,Human,AV,Handling issues
