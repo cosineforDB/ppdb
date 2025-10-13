@@ -193,6 +193,9 @@ class PPDBDatabase:
             cursor.execute("SELECT * FROM Aquatic_Ecotox WHERE ID = ?", (substance_id,))
             aquatic = cursor.fetchone()
 
+            cursor.execute("SELECT * FROM Terrestrial_Ecotox WHERE ID = ?", (substance_id,))
+            terrestrial = cursor.fetchone()
+
             cursor.execute("SELECT * FROM Human WHERE ID = ?", (substance_id,))
             human = cursor.fetchone()
 
@@ -203,6 +206,7 @@ class PPDBDatabase:
                 "identification": dict(identification) if identification else {},
                 "fate": dict(fate) if fate else {},
                 "aquatic_ecotox": dict(aquatic) if aquatic else {},
+                "terrestrial_ecotox": dict(terrestrial) if terrestrial else {},
                 "human": dict(human) if human else {},
                 "aliases": [dict(a) for a in aliases],
             }
@@ -550,9 +554,16 @@ def substance_details(substance_id: int):
             with ui.grid(columns=2).classes("w-full gap-4"):
                 display_field("CAS_RN", info.get("CAS_RN"))
                 display_field("Availability_status", info.get("Availability_status"))
+                display_field("Isomerism", info.get("Isomerism"))  # BH
+                display_field("Chemical_formula", info.get("Chemical_formula"))  # BK
                 display_field("Canonical_SMILES", info.get("Canonical_SMILES"))
+                display_field("Isomeric_SMILES", info.get("Isomeric_SMILES"))  # BJ
                 display_field("International_Chemical_Identifier_InChI", info.get("International_Chemical_Identifier_InChI"))
+                display_field("International_Chemical_Identifier_key_InChIKey", info.get("International_Chemical_Identifier_key_InChIKey"))  # BL
                 display_field("Molecular_mass", info.get("Molecular_mass"))
+                display_field("Pesticide_type", info.get("Pesticide_type"))  # AT
+                display_field("Substance_group", info.get("Substance_group"))  # AW
+                display_field("Mode_of_action", info.get("Mode_of_action"))  # BB
 
         # 別名
         if details["aliases"]:
@@ -569,9 +580,30 @@ def substance_details(substance_id: int):
                 fate = details["fate"]
                 with ui.grid(columns=2).classes("w-full gap-4"):
                     display_field("Solubility__In_water_at_20_degC_mgl", fate.get("Solubility__In_water_at_20_degC_mgl"))
+                    display_field("Melting_point_degC", fate.get("Melting_point_degC"))  # N
+                    display_field("Boiling_point_deg_C_1atm", fate.get("Boiling_point_deg_C_1atm"))  # P
                     display_field("LogP", fate.get("LogP"))
+                    display_field("Dissociation_constant_pKa_at_25_degC", fate.get("Dissociation_constant_pKa_at_25_degC"))  # Z
                     display_field("Vapour_pressure_at_20_degC_mPa", fate.get("Vapour_pressure_at_20_degC_mPa"))
-                    display_field("Henrys_law_constant_at_25_degC_Pam3mol", fate.get("Henrys_law_constant_at_25_degC_Pam3mol"))
+                    display_field("Henrys_law_constant_at_25_degC_Pam3mol", fate.get("Henrys_law_constant_at_25_degC_Pam3mol"))  # AE
+                    display_field("Soil_DT50__Typical_days", fate.get("Soil_DT50__Typical_days"))  # AQ
+                    display_field("Soil_DT50__Lab_days", fate.get("Soil_DT50__Lab_days"))  # AS
+                    display_field("Soil_DT50__Field_days", fate.get("Soil_DT50__Field_days"))  # AU
+                    display_field("Watersediment_DT50_days", fate.get("Watersediment_DT50_days"))  # BP
+                    display_field("Koc_mlg", fate.get("Koc_mlg"))  # BW
+                    display_field("Kfoc_mlg", fate.get("Kfoc_mlg"))  # CA
+                    display_field("Bioconcentration_factor", fate.get("Bioconcentration_factor"))  # AN
+
+        # Terrestrial Ecotoxicology
+        if details["terrestrial_ecotox"]:
+            with ui.card().classes("w-full q-pa-md q-mb-md"):
+                ui.label("Terrestrial Ecotoxicology / 陸生生態毒理").classes("text-h6 q-mb-md")
+                terr_eco = details["terrestrial_ecotox"]
+                with ui.grid(columns=2).classes("w-full gap-4"):
+                    display_field("Mammals__Acute_oral_LD50_mgkg_BWday", terr_eco.get("Mammals__Acute_oral_LD50_mgkg_BWday"), details_dict=details)  # D
+                    display_field("Birds__Acute_LD50_mgkg", terr_eco.get("Birds__Acute_LD50_mgkg"), details_dict=details)  # N
+                    display_field("Earthworms__Acute_14d_LC50_mgkg", terr_eco.get("Earthworms__Acute_14d_LC50_mgkg"), details_dict=details)  # BH
+                    display_field("Honeybees__Contact_acute_48hr_LD50_ug_per_bee", terr_eco.get("Honeybees__Contact_acute_48hr_LD50_ug_per_bee"), details_dict=details)  # X
 
         # Aquatic Ecotoxicology
         if details["aquatic_ecotox"]:
@@ -579,8 +611,8 @@ def substance_details(substance_id: int):
                 ui.label("Aquatic Ecotoxicology / 水生生態毒理").classes("text-h6 q-mb-md")
                 eco = details["aquatic_ecotox"]
                 with ui.grid(columns=2).classes("w-full gap-4"):
-                    display_field("Fish__Acute_96hr_LC50_mgl__TEMPERATE", eco.get("Fish__Acute_96hr_LC50_mgl__TEMPERATE"))
-                    display_field("Algae__Acute_72hr_EC50_growth_mgl", eco.get("Algae__Acute_72hr_EC50_growth_mgl"))
+                    display_field("Fish__Acute_96hr_LC50_mgl__TEMPERATE", eco.get("Fish__Acute_96hr_LC50_mgl__TEMPERATE"), details_dict=details)
+                    display_field("Algae__Acute_72hr_EC50_growth_mgl", eco.get("Algae__Acute_72hr_EC50_growth_mgl"), details_dict=details)
 
         # Human Health
         if details["human"]:
@@ -592,10 +624,32 @@ def substance_details(substance_id: int):
                     display_field("Mammals__Inhalation_LC50_mgl", human.get("Mammals__Inhalation_LC50_mgl"))
                     display_field("Acceptable_Daily_Intake_ADI_mgkg_bw", human.get("Acceptable_Daily_Intake_ADI_mgkg_bw"))
                     display_field("Acute_Reference_Dose_ARfD_mgkg_BWday", human.get("Acute_Reference_Dose_ARfD_mgkg_BWday"))
+                    display_field("Acceptable_Operator_Exposure_Level_AOEL_systemic", human.get("Acceptable_Operator_Exposure_Level_AOEL_systemic"))  # Y
+                    display_field("Percutaneous_penetration_studies_", human.get("Percutaneous_penetration_studies_"))  # AA
+                    display_field("Carcinogen", human.get("Carcinogen"))  # AJ
+                    display_field("Genotoxic", human.get("Genotoxic"))  # AK
+                    display_field("Endocrine_distrupter", human.get("Endocrine_distrupter"))  # AL
+                    display_field("Reproductiondevelopment_effects", human.get("Reproductiondevelopment_effects"))  # AM
+                    display_field("Acetyl_cholinesterase_inhibitor", human.get("Acetyl_cholinesterase_inhibitor"))  # AN
+                    display_field("Neurotoxicant", human.get("Neurotoxicant"))  # AO
+                    display_field("Respiratory_tract_irritant", human.get("Respiratory_tract_irritant"))  # AP
+                    display_field("Skin_irritant", human.get("Skin_irritant"))  # AQ
+                    display_field("Skin_sensitiser", human.get("Skin_sensitiser"))  # AR
+                    display_field("Eye_irritant", human.get("Eye_irritant"))  # AS
+                    display_field("Phototoxicant", human.get("Phototoxicant"))  # AT
+                    display_field("General_human_health_issues", human.get("General_human_health_issues"))  # AU
+                    display_field("Handling_issues", human.get("Handling_issues"))  # AV
 
 
-def display_field(db_field: str, value: Any, show_metadata: bool = True):
-    """顯示欄位（包含中文和資料來源資訊）"""
+def display_field(db_field: str, value: Any, show_metadata: bool = True, details_dict: Optional[Dict[str, Any]] = None):
+    """顯示欄位（包含中文和資料來源資訊）
+
+    Args:
+        db_field: 資料庫欄位名稱
+        value: 欄位值
+        show_metadata: 是否顯示資料來源資訊
+        details_dict: 包含完整資料的字典，用於取得比較運算符和單位（針對 Ecotox 欄位）
+    """
     global field_mapper
     info = field_mapper.get_field_info(db_field)
 
@@ -606,8 +660,8 @@ def display_field(db_field: str, value: Any, show_metadata: bool = True):
         else:
             ui.label(info['en']).classes("text-body1 font-bold")
 
-        # 顯示值
-        display_value = str(value) if value not in [None, "", "nan"] else "N/A"
+        # 格式化值（特別處理 Ecotox 欄位）
+        display_value = format_ecotox_value(db_field, value, details_dict) if details_dict else str(value) if value not in [None, "", "nan"] else "N/A"
         ui.label(display_value).classes("text-h6 q-ml-md")
 
         # 顯示資料來源資訊（Sheet, Column）
@@ -615,6 +669,82 @@ def display_field(db_field: str, value: Any, show_metadata: bool = True):
             with ui.row().classes("q-mt-xs items-center gap-1"):
                 ui.icon("info", size="xs").classes("text-grey-6")
                 ui.label(f"來源: {info['sheet']} 表，欄位 {info['column']}").classes("text-caption text-grey-6")
+
+
+def format_ecotox_value(db_field: str, value: Any, details_dict: Dict[str, Any]) -> str:
+    """格式化 Ecotox 值，包含比較運算符
+
+    針對 Terrestrial Ecotox 和 Aquatic Ecotox 欄位，格式化為：{比較運算符} {數值} {單位}
+    例如：> 150 mg/kg BW/day
+
+    根據 Excel 結構，比較運算符欄位的命名模式為：
+    - Terrestrial: Mammals__Acute_oral_LD50_mgkg_BWday -> __Mammals__Acute_oral_LD50
+    - Aquatic: Fish__Acute_96hr_LC50_mgl__TEMPERATE -> __Fish__Acute_96hr_LC50__TEMPERATE
+    """
+    if value in [None, "", "nan"]:
+        return "N/A"
+
+    # 從欄位名稱中提取單位（通常在最後的底線後面）
+    import re
+
+    # 提取單位資訊 - 通常在欄位名稱的最後部分
+    # 例如：mgkg_BWday, mgl, ug_per_bee
+    parts = db_field.split('_')
+    # 根據常見的單位模式來判斷
+    unit_patterns = {
+        'mgkg_BWday': 'mg/kg BW/day',
+        'mgkg': 'mg/kg',
+        'mgl': 'mg/l',
+        'ug_per_bee': 'μg/bee',
+        'days': 'days',
+        'mlg': 'mL/g',
+        'degC': '°C',
+        'Pam3mol': 'Pa m³/mol',
+        'mPa': 'mPa',
+    }
+
+    unit = ""
+    for pattern, unit_str in unit_patterns.items():
+        if pattern in db_field:
+            unit = unit_str
+            break
+
+    # 找到對應的比較運算符欄位
+    comparison_op = None
+
+    # 對於 Terrestrial_Ecotox
+    if "terrestrial_ecotox" in details_dict:
+        data = details_dict["terrestrial_ecotox"]
+        # 移除單位後綴來構造比較運算符欄位名稱
+        # 例如：Mammals__Acute_oral_LD50_mgkg_BWday -> __Mammals__Acute_oral_LD50
+        base_field = re.sub(r'_(mgkg_BWday|mgkg|mgl|ug_per_bee|days|mlg|degC)$', '', db_field)
+        comparison_field = f"__{base_field}"
+
+        if comparison_field in data:
+            comparison_op = data.get(comparison_field)
+
+    # 對於 Aquatic_Ecotox
+    if "aquatic_ecotox" in details_dict and not comparison_op:
+        data = details_dict["aquatic_ecotox"]
+        # Aquatic 欄位可能有 __TEMPERATE 或 __TROPICAL 後綴
+        base_field = re.sub(r'_(mgkg_BWday|mgkg|mgl|ug_per_bee|days|mlg|degC)(_[A-Z]+)?$', r'\2', db_field)
+        comparison_field = f"__{base_field}"
+
+        if comparison_field in data:
+            comparison_op = data.get(comparison_field)
+
+    # 組合顯示
+    if comparison_op and comparison_op not in [None, "", "nan"]:
+        if unit:
+            return f"{comparison_op} {value} {unit}".strip()
+        else:
+            return f"{comparison_op} {value}".strip()
+
+    # 如果沒有比較運算符，只顯示值
+    if unit:
+        return f"{value} {unit}".strip()
+    else:
+        return str(value)
 
 
 @ui.page("/compare")
@@ -686,39 +816,75 @@ def display_comparison_table():
             return
 
         # 定義要比對的欄位（使用資料庫欄位名稱）
-        # 格式：(資料庫欄位名, 取值函數, 分類)
+        # 格式：(資料庫欄位名, 取值函數, 分類, 是否為Ecotox欄位)
         comparison_fields = [
             # 基本資訊
-            ("Active", lambda d: d["identification"].get("Active"), "一般資料"),
-            ("CAS_RN", lambda d: d["identification"].get("CAS_RN"), "一般資料"),
-            ("Availability_status", lambda d: d["identification"].get("Availability_status"), "一般資料"),
-            ("Molecular_mass", lambda d: d["identification"].get("Molecular_mass"), "一般資料"),
-            ("Canonical_SMILES", lambda d: d["identification"].get("Canonical_SMILES"), "一般資料"),
-            ("International_Chemical_Identifier_InChI", lambda d: d["identification"].get("International_Chemical_Identifier_InChI"), "一般資料"),
+            ("Active", lambda d: d["identification"].get("Active"), "一般資料", False),
+            ("CAS_RN", lambda d: d["identification"].get("CAS_RN"), "一般資料", False),
+            ("Availability_status", lambda d: d["identification"].get("Availability_status"), "一般資料", False),
+            ("Isomerism", lambda d: d["identification"].get("Isomerism"), "一般資料", False),
+            ("Chemical_formula", lambda d: d["identification"].get("Chemical_formula"), "一般資料", False),
+            ("Canonical_SMILES", lambda d: d["identification"].get("Canonical_SMILES"), "一般資料", False),
+            ("Isomeric_SMILES", lambda d: d["identification"].get("Isomeric_SMILES"), "一般資料", False),
+            ("International_Chemical_Identifier_InChI", lambda d: d["identification"].get("International_Chemical_Identifier_InChI"), "一般資料", False),
+            ("International_Chemical_Identifier_key_InChIKey", lambda d: d["identification"].get("International_Chemical_Identifier_key_InChIKey"), "一般資料", False),
+            ("Molecular_mass", lambda d: d["identification"].get("Molecular_mass"), "一般資料", False),
+            ("Pesticide_type", lambda d: d["identification"].get("Pesticide_type"), "一般資料", False),
+            ("Substance_group", lambda d: d["identification"].get("Substance_group"), "一般資料", False),
+            ("Mode_of_action", lambda d: d["identification"].get("Mode_of_action"), "一般資料", False),
 
             # 環境命運
-            ("Solubility__In_water_at_20_degC_mgl", lambda d: d["fate"].get("Solubility__In_water_at_20_degC_mgl"), "環境命運"),
-            ("LogP", lambda d: d["fate"].get("LogP"), "環境命運"),
-            ("Vapour_pressure_at_20_degC_mPa", lambda d: d["fate"].get("Vapour_pressure_at_20_degC_mPa"), "環境命運"),
-            ("Henrys_law_constant_at_25_degC_Pam3mol", lambda d: d["fate"].get("Henrys_law_constant_at_25_degC_Pam3mol"), "環境命運"),
-            ("Melting_point_degC", lambda d: d["fate"].get("Melting_point_degC"), "環境命運"),
-            ("Boiling_point_deg_C_1atm", lambda d: d["fate"].get("Boiling_point_deg_C_1atm"), "環境命運"),
+            ("Solubility__In_water_at_20_degC_mgl", lambda d: d["fate"].get("Solubility__In_water_at_20_degC_mgl"), "環境命運", False),
+            ("Melting_point_degC", lambda d: d["fate"].get("Melting_point_degC"), "環境命運", False),
+            ("Boiling_point_deg_C_1atm", lambda d: d["fate"].get("Boiling_point_deg_C_1atm"), "環境命運", False),
+            ("LogP", lambda d: d["fate"].get("LogP"), "環境命運", False),
+            ("Dissociation_constant_pKa_at_25_degC", lambda d: d["fate"].get("Dissociation_constant_pKa_at_25_degC"), "環境命運", False),
+            ("Vapour_pressure_at_20_degC_mPa", lambda d: d["fate"].get("Vapour_pressure_at_20_degC_mPa"), "環境命運", False),
+            ("Henrys_law_constant_at_25_degC_Pam3mol", lambda d: d["fate"].get("Henrys_law_constant_at_25_degC_Pam3mol"), "環境命運", False),
+            ("Soil_DT50__Typical_days", lambda d: d["fate"].get("Soil_DT50__Typical_days"), "環境命運", False),
+            ("Soil_DT50__Lab_days", lambda d: d["fate"].get("Soil_DT50__Lab_days"), "環境命運", False),
+            ("Soil_DT50__Field_days", lambda d: d["fate"].get("Soil_DT50__Field_days"), "環境命運", False),
+            ("Watersediment_DT50_days", lambda d: d["fate"].get("Watersediment_DT50_days"), "環境命運", False),
+            ("Koc_mlg", lambda d: d["fate"].get("Koc_mlg"), "環境命運", False),
+            ("Kfoc_mlg", lambda d: d["fate"].get("Kfoc_mlg"), "環境命運", False),
+            ("Bioconcentration_factor", lambda d: d["fate"].get("Bioconcentration_factor"), "環境命運", False),
+
+            # 陸生生態毒理
+            ("Mammals__Acute_oral_LD50_mgkg_BWday", lambda d: d["terrestrial_ecotox"].get("Mammals__Acute_oral_LD50_mgkg_BWday"), "陸生生態毒理", True),
+            ("Birds__Acute_LD50_mgkg", lambda d: d["terrestrial_ecotox"].get("Birds__Acute_LD50_mgkg"), "陸生生態毒理", True),
+            ("Earthworms__Acute_14d_LC50_mgkg", lambda d: d["terrestrial_ecotox"].get("Earthworms__Acute_14d_LC50_mgkg"), "陸生生態毒理", True),
+            ("Honeybees__Contact_acute_48hr_LD50_ug_per_bee", lambda d: d["terrestrial_ecotox"].get("Honeybees__Contact_acute_48hr_LD50_ug_per_bee"), "陸生生態毒理", True),
 
             # 水生生態毒理
-            ("Fish__Acute_96hr_LC50_mgl__TEMPERATE", lambda d: d["aquatic_ecotox"].get("Fish__Acute_96hr_LC50_mgl__TEMPERATE"), "生態毒理"),
-            ("Algae__Acute_72hr_EC50_growth_mgl", lambda d: d["aquatic_ecotox"].get("Algae__Acute_72hr_EC50_growth_mgl"), "生態毒理"),
+            ("Fish__Acute_96hr_LC50_mgl__TEMPERATE", lambda d: d["aquatic_ecotox"].get("Fish__Acute_96hr_LC50_mgl__TEMPERATE"), "水生生態毒理", True),
+            ("Algae__Acute_72hr_EC50_growth_mgl", lambda d: d["aquatic_ecotox"].get("Algae__Acute_72hr_EC50_growth_mgl"), "水生生態毒理", True),
 
             # 人體健康
-            ("Mammals__Dermal_LD50_mgkg", lambda d: d["human"].get("Mammals__Dermal_LD50_mgkg"), "人體健康"),
-            ("Mammals__Inhalation_LC50_mgl", lambda d: d["human"].get("Mammals__Inhalation_LC50_mgl"), "人體健康"),
-            ("Acceptable_Daily_Intake_ADI_mgkg_bw", lambda d: d["human"].get("Acceptable_Daily_Intake_ADI_mgkg_bw"), "人體健康"),
-            ("Acute_Reference_Dose_ARfD_mgkg_BWday", lambda d: d["human"].get("Acute_Reference_Dose_ARfD_mgkg_BWday"), "人體健康"),
+            ("Mammals__Dermal_LD50_mgkg", lambda d: d["human"].get("Mammals__Dermal_LD50_mgkg"), "人體健康", False),
+            ("Mammals__Inhalation_LC50_mgl", lambda d: d["human"].get("Mammals__Inhalation_LC50_mgl"), "人體健康", False),
+            ("Acceptable_Daily_Intake_ADI_mgkg_bw", lambda d: d["human"].get("Acceptable_Daily_Intake_ADI_mgkg_bw"), "人體健康", False),
+            ("Acute_Reference_Dose_ARfD_mgkg_BWday", lambda d: d["human"].get("Acute_Reference_Dose_ARfD_mgkg_BWday"), "人體健康", False),
+            ("Acceptable_Operator_Exposure_Level_AOEL_systemic", lambda d: d["human"].get("Acceptable_Operator_Exposure_Level_AOEL_systemic"), "人體健康", False),
+            ("Percutaneous_penetration_studies_", lambda d: d["human"].get("Percutaneous_penetration_studies_"), "人體健康", False),
+            ("Carcinogen", lambda d: d["human"].get("Carcinogen"), "人體健康", False),
+            ("Genotoxic", lambda d: d["human"].get("Genotoxic"), "人體健康", False),
+            ("Endocrine_distrupter", lambda d: d["human"].get("Endocrine_distrupter"), "人體健康", False),
+            ("Reproductiondevelopment_effects", lambda d: d["human"].get("Reproductiondevelopment_effects"), "人體健康", False),
+            ("Acetyl_cholinesterase_inhibitor", lambda d: d["human"].get("Acetyl_cholinesterase_inhibitor"), "人體健康", False),
+            ("Neurotoxicant", lambda d: d["human"].get("Neurotoxicant"), "人體健康", False),
+            ("Respiratory_tract_irritant", lambda d: d["human"].get("Respiratory_tract_irritant"), "人體健康", False),
+            ("Skin_irritant", lambda d: d["human"].get("Skin_irritant"), "人體健康", False),
+            ("Skin_sensitiser", lambda d: d["human"].get("Skin_sensitiser"), "人體健康", False),
+            ("Eye_irritant", lambda d: d["human"].get("Eye_irritant"), "人體健康", False),
+            ("Phototoxicant", lambda d: d["human"].get("Phototoxicant"), "人體健康", False),
+            ("General_human_health_issues", lambda d: d["human"].get("General_human_health_issues"), "人體健康", False),
+            ("Handling_issues", lambda d: d["human"].get("Handling_issues"), "人體健康", False),
         ]
 
         # 按類別分組顯示
         current_category = None
 
-        for db_field, value_getter, category in comparison_fields:
+        for db_field, value_getter, category, is_ecotox in comparison_fields:
             # 如果是新類別，顯示類別標題
             if category != current_category:
                 current_category = category
@@ -749,7 +915,12 @@ def display_comparison_table():
                 with ui.row().classes("flex-grow gap-4 flex-wrap"):
                     for i, details in enumerate(details_list):
                         value = value_getter(details)
-                        display_value = str(value) if value not in [None, "", "nan"] else "N/A"
+
+                        # 如果是 Ecotox 欄位，使用特殊格式化
+                        if is_ecotox and value not in [None, "", "nan"]:
+                            display_value = format_ecotox_value(db_field, value, details)
+                        else:
+                            display_value = str(value) if value not in [None, "", "nan"] else "N/A"
 
                         with ui.card().classes("q-pa-sm").style("min-width: 150px"):
                             ui.label(details["identification"].get("Active", f"#{i+1}")).classes("text-caption text-grey-7")
