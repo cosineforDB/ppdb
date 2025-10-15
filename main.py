@@ -522,8 +522,16 @@ def display_search_results(results: List[Dict], container: ui.column, pagination
             ui.button("Show All", on_click=lambda: display_all_substances(container, pagination_container, page=1)).classes("q-mt-md")
             return
 
+        # 為每個結果添加中文名稱
+        for result in results:
+            chinese_name = db.get_chinese_name(result.get("name", ""))
+            if chinese_name:
+                result["name_with_chinese"] = f"{result['name']} ({chinese_name})"
+            else:
+                result["name_with_chinese"] = result["name"]
+
         columns = [
-            {"name": "name", "label": "Substance Name", "field": "name", "align": "left", "sortable": True},
+            {"name": "name", "label": "Substance Name", "field": "name_with_chinese", "align": "left", "sortable": True},
             {"name": "cas_rn", "label": "CAS RN", "field": "cas_rn", "align": "left"},
             {"name": "status", "label": "Status", "field": "status", "align": "left"},
             {"name": "actions", "label": "Actions", "field": "actions", "align": "center"},
