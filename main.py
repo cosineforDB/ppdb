@@ -98,19 +98,45 @@ class PPDBDatabase:
 
         try:
             if search_type == "name":
-                sql = """
-                    SELECT DISTINCT
-                        i.ID as id,
-                        i.Active as name,
-                        i.CAS_RN as cas_rn,
-                        i.Availability_status as status,
-                        i.Canonical_SMILES as smiles
-                    FROM Identification i
-                    WHERE i.Active LIKE ?
-                    ORDER BY i.Active
-                    LIMIT 100
-                """
-                cursor.execute(sql, (f"%{query}%",))
+                # 先檢查是否為中文查詢
+                cursor.execute(
+                    "SELECT english_name FROM Translation WHERE chinese_name LIKE ?",
+                    (f"%{query}%",)
+                )
+                translation_results = cursor.fetchall()
+
+                if translation_results:
+                    # 如果找到翻譯，使用英文名稱搜尋
+                    english_names = [row[0] for row in translation_results]
+                    placeholders = ','.join('?' * len(english_names))
+                    sql = f"""
+                        SELECT DISTINCT
+                            i.ID as id,
+                            i.Active as name,
+                            i.CAS_RN as cas_rn,
+                            i.Availability_status as status,
+                            i.Canonical_SMILES as smiles
+                        FROM Identification i
+                        WHERE UPPER(i.Active) IN ({placeholders})
+                        ORDER BY i.Active
+                        LIMIT 100
+                    """
+                    cursor.execute(sql, english_names)
+                else:
+                    # 一般英文搜尋
+                    sql = """
+                        SELECT DISTINCT
+                            i.ID as id,
+                            i.Active as name,
+                            i.CAS_RN as cas_rn,
+                            i.Availability_status as status,
+                            i.Canonical_SMILES as smiles
+                        FROM Identification i
+                        WHERE i.Active LIKE ?
+                        ORDER BY i.Active
+                        LIMIT 100
+                    """
+                    cursor.execute(sql, (f"%{query}%",))
             elif search_type == "cas":
                 sql = """
                     SELECT DISTINCT
@@ -258,6 +284,21 @@ class PPDBDatabase:
         finally:
             conn.close()
 
+    def get_chinese_name(self, english_name: str) -> Optional[str]:
+        """根據英文名稱取得中文名稱"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                "SELECT chinese_name FROM Translation WHERE UPPER(english_name) = UPPER(?)",
+                (english_name,)
+            )
+            result = cursor.fetchone()
+            return result[0] if result else None
+        finally:
+            conn.close()
+
 
 # 全域變數
 db = PPDBDatabase()
@@ -322,8 +363,8 @@ def search_page():
         with ui.card().classes("w-full q-pa-md q-mb-md"):
             with ui.row().classes("w-full items-end gap-4"):
                 search_input = ui.input(
-                    label="Search query",
-                    placeholder="Enter substance name, CAS RN, SMILES, InChI, or alias"
+                    label="Search query / 搜尋查詢",
+                    placeholder="Enter substance name (English or Chinese) / 輸入物質名稱（英文或中文）, CAS RN, SMILES, InChI, or alias"
                 ).classes("flex-grow").props("outlined")
 
                 search_type = ui.select(
@@ -546,7 +587,12 @@ def substance_details(substance_id: int):
         # 標題
         with ui.row().classes("w-full items-center q-mb-md"):
             ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/search")).props("flat round")
-            ui.label(info.get("Active", "N/A")).classes("text-h4 q-ml-md")
+            with ui.column().classes("q-ml-md"):
+                ui.label(info.get("Active", "N/A")).classes("text-h4")
+                # 顯示中文名稱（如果有的話）
+                chinese_name = db.get_chinese_name(info.get("Active", ""))
+                if chinese_name:
+                    ui.label(f"中文名稱: {chinese_name}").classes("text-h6 text-grey-7")
 
         # 基本資訊
         with ui.card().classes("w-full q-pa-md q-mb-md"):
