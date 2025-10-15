@@ -2,6 +2,8 @@ import sqlite3
 import pandas as pd
 from nicegui import ui
 from typing import List, Dict, Any, Optional
+from io import BytesIO
+from datetime import datetime
 
 
 class FieldMapper:
@@ -831,11 +833,19 @@ def compare_page():
             ui.label(f"Selected Substances ({len(selected_for_comparison)}/8)").classes("text-h6 q-mb-md")
             with ui.row().classes("w-full gap-2 flex-wrap"):
                 for i, substance in enumerate(selected_for_comparison):
-                    with ui.chip(text=substance["name"], removable=True).props("color=primary"):
-                        pass
-                    # Note: Chip removal needs to be handled differently in this structure
+                    # 取得中文名稱
+                    chinese_name = db.get_chinese_name(substance["name"])
+                    if chinese_name:
+                        display_name = f"{substance['name']} ({chinese_name})"
+                    else:
+                        display_name = substance["name"]
 
-            ui.button("Clear All", on_click=lambda: clear_comparison(), icon="clear").props("flat color=negative")
+                    # 不使用 removable=True，這樣就不會有刪除按鈕
+                    ui.chip(text=display_name).props("color=primary")
+
+            with ui.row().classes("gap-2 q-mt-md"):
+                ui.button("Export to Excel / 匯出 Excel", on_click=lambda: export_comparison_to_excel(), icon="download").props("color=positive")
+                ui.button("Clear All / 清除全部", on_click=lambda: clear_comparison(), icon="clear").props("flat color=negative")
 
         # 比對表格
         if len(selected_for_comparison) >= 2:
@@ -849,6 +859,169 @@ def clear_comparison():
     global selected_for_comparison
     selected_for_comparison = []
     ui.navigate.to("/compare")
+
+
+def export_comparison_to_excel():
+    """匯出比對結果到 Excel"""
+    global selected_for_comparison, field_mapper
+
+    if len(selected_for_comparison) < 2:
+        ui.notify("請至少選擇 2 個物質進行比對 / Please select at least 2 substances to compare", type="warning")
+        return
+
+    # 取得詳細資料
+    details_list = []
+    for substance in selected_for_comparison:
+        details = db.get_substance_details(substance["id"])
+        if details:
+            details_list.append(details)
+
+    if not details_list:
+        ui.notify("無法載入物質資料 / Error loading substance details", type="negative")
+        return
+
+    # 定義要比對的欄位（與顯示相同）
+    comparison_fields = [
+        # 基本資訊
+        ("Active", lambda d: d["identification"].get("Active"), "一般資料", False),
+        ("CAS_RN", lambda d: d["identification"].get("CAS_RN"), "一般資料", False),
+        ("Availability_status", lambda d: d["identification"].get("Availability_status"), "一般資料", False),
+        ("Isomerism", lambda d: d["identification"].get("Isomerism"), "一般資料", False),
+        ("Chemical_formula", lambda d: d["identification"].get("Chemical_formula"), "一般資料", False),
+        ("Canonical_SMILES", lambda d: d["identification"].get("Canonical_SMILES"), "一般資料", False),
+        ("Isomeric_SMILES", lambda d: d["identification"].get("Isomeric_SMILES"), "一般資料", False),
+        ("International_Chemical_Identifier_InChI", lambda d: d["identification"].get("International_Chemical_Identifier_InChI"), "一般資料", False),
+        ("International_Chemical_Identifier_key_InChIKey", lambda d: d["identification"].get("International_Chemical_Identifier_key_InChIKey"), "一般資料", False),
+        ("Molecular_mass", lambda d: d["identification"].get("Molecular_mass"), "一般資料", False),
+        ("Pesticide_type", lambda d: d["identification"].get("Pesticide_type"), "一般資料", False),
+        ("Substance_group", lambda d: d["identification"].get("Substance_group"), "一般資料", False),
+        ("Mode_of_action", lambda d: d["identification"].get("Mode_of_action"), "一般資料", False),
+
+        # 環境命運
+        ("Solubility__In_water_at_20_degC_mgl", lambda d: d["fate"].get("Solubility__In_water_at_20_degC_mgl"), "環境命運", False),
+        ("Melting_point_degC", lambda d: d["fate"].get("Melting_point_degC"), "環境命運", False),
+        ("Boiling_point_deg_C_1atm", lambda d: d["fate"].get("Boiling_point_deg_C_1atm"), "環境命運", False),
+        ("LogP", lambda d: d["fate"].get("LogP"), "環境命運", False),
+        ("Dissociation_constant_pKa_at_25_degC", lambda d: d["fate"].get("Dissociation_constant_pKa_at_25_degC"), "環境命運", False),
+        ("Vapour_pressure_at_20_degC_mPa", lambda d: d["fate"].get("Vapour_pressure_at_20_degC_mPa"), "環境命運", False),
+        ("Henrys_law_constant_at_25_degC_Pam3mol", lambda d: d["fate"].get("Henrys_law_constant_at_25_degC_Pam3mol"), "環境命運", False),
+        ("Soil_DT50__Typical_days", lambda d: d["fate"].get("Soil_DT50__Typical_days"), "環境命運", False),
+        ("Soil_DT50__Lab_days", lambda d: d["fate"].get("Soil_DT50__Lab_days"), "環境命運", False),
+        ("Soil_DT50__Field_days", lambda d: d["fate"].get("Soil_DT50__Field_days"), "環境命運", False),
+        ("Watersediment_DT50_days", lambda d: d["fate"].get("Watersediment_DT50_days"), "環境命運", False),
+        ("Koc_mlg", lambda d: d["fate"].get("Koc_mlg"), "環境命運", False),
+        ("Kfoc_mlg", lambda d: d["fate"].get("Kfoc_mlg"), "環境命運", False),
+        ("Bioconcentration_factor", lambda d: d["fate"].get("Bioconcentration_factor"), "環境命運", False),
+
+        # 陸生生態毒理
+        ("Mammals__Acute_oral_LD50_mgkg_BWday", lambda d: d["terrestrial_ecotox"].get("Mammals__Acute_oral_LD50_mgkg_BWday"), "陸生生態毒理", True),
+        ("Birds__Acute_LD50_mgkg", lambda d: d["terrestrial_ecotox"].get("Birds__Acute_LD50_mgkg"), "陸生生態毒理", True),
+        ("Earthworms__Acute_14d_LC50_mgkg", lambda d: d["terrestrial_ecotox"].get("Earthworms__Acute_14d_LC50_mgkg"), "陸生生態毒理", True),
+        ("Honeybees__Contact_acute_48hr_LD50_ug_per_bee", lambda d: d["terrestrial_ecotox"].get("Honeybees__Contact_acute_48hr_LD50_ug_per_bee"), "陸生生態毒理", True),
+
+        # 水生生態毒理
+        ("Fish__Acute_96hr_LC50_mgl__TEMPERATE", lambda d: d["aquatic_ecotox"].get("Fish__Acute_96hr_LC50_mgl__TEMPERATE"), "水生生態毒理", True),
+        ("Algae__Acute_72hr_EC50_growth_mgl", lambda d: d["aquatic_ecotox"].get("Algae__Acute_72hr_EC50_growth_mgl"), "水生生態毒理", True),
+
+        # 人體健康
+        ("Mammals__Dermal_LD50_mgkg", lambda d: d["human"].get("Mammals__Dermal_LD50_mgkg"), "人體健康", False),
+        ("Mammals__Inhalation_LC50_mgl", lambda d: d["human"].get("Mammals__Inhalation_LC50_mgl"), "人體健康", False),
+        ("Acceptable_Daily_Intake_ADI_mgkg_bw", lambda d: d["human"].get("Acceptable_Daily_Intake_ADI_mgkg_bw"), "人體健康", False),
+        ("Acute_Reference_Dose_ARfD_mgkg_BWday", lambda d: d["human"].get("Acute_Reference_Dose_ARfD_mgkg_BWday"), "人體健康", False),
+        ("Acceptable_Operator_Exposure_Level_AOEL_systemic", lambda d: d["human"].get("Acceptable_Operator_Exposure_Level_AOEL_systemic"), "人體健康", False),
+        ("Percutaneous_penetration_studies_", lambda d: d["human"].get("Percutaneous_penetration_studies_"), "人體健康", False),
+        ("Carcinogen", lambda d: d["human"].get("Carcinogen"), "人體健康", False),
+        ("Genotoxic", lambda d: d["human"].get("Genotoxic"), "人體健康", False),
+        ("Endocrine_distrupter", lambda d: d["human"].get("Endocrine_distrupter"), "人體健康", False),
+        ("Reproductiondevelopment_effects", lambda d: d["human"].get("Reproductiondevelopment_effects"), "人體健康", False),
+        ("Acetyl_cholinesterase_inhibitor", lambda d: d["human"].get("Acetyl_cholinesterase_inhibitor"), "人體健康", False),
+        ("Neurotoxicant", lambda d: d["human"].get("Neurotoxicant"), "人體健康", False),
+        ("Respiratory_tract_irritant", lambda d: d["human"].get("Respiratory_tract_irritant"), "人體健康", False),
+        ("Skin_irritant", lambda d: d["human"].get("Skin_irritant"), "人體健康", False),
+        ("Skin_sensitiser", lambda d: d["human"].get("Skin_sensitiser"), "人體健康", False),
+        ("Eye_irritant", lambda d: d["human"].get("Eye_irritant"), "人體健康", False),
+        ("Phototoxicant", lambda d: d["human"].get("Phototoxicant"), "人體健康", False),
+        ("General_human_health_issues", lambda d: d["human"].get("General_human_health_issues"), "人體健康", False),
+        ("Handling_issues", lambda d: d["human"].get("Handling_issues"), "人體健康", False),
+    ]
+
+    # 建立資料結構
+    data = []
+
+    for db_field, value_getter, category, is_ecotox in comparison_fields:
+        field_info = field_mapper.get_field_info(db_field)
+
+        row = {
+            "Category / 類別": category,
+            "Field (EN) / 欄位(英文)": field_info['en'],
+            "Field (ZH) / 欄位(中文)": field_info['zh'],
+        }
+
+        # 為每個物質添加值
+        for i, details in enumerate(details_list):
+            substance_name = details["identification"].get("Active", f"#{i+1}")
+            chinese_name = db.get_chinese_name(substance_name)
+            if chinese_name:
+                col_name = f"{substance_name} ({chinese_name})"
+            else:
+                col_name = substance_name
+
+            value = value_getter(details)
+
+            # 如果是 Ecotox 欄位，使用特殊格式化
+            if is_ecotox and value not in [None, "", "nan"]:
+                display_value = format_ecotox_value(db_field, value, details)
+            else:
+                display_value = str(value) if value not in [None, "", "nan"] else "N/A"
+
+            row[col_name] = display_value
+
+        data.append(row)
+
+    # 建立 DataFrame，並清理可能造成問題的字元
+    df = pd.DataFrame(data)
+
+    # 將所有資料轉換為字串，避免公式注入問題
+    for col in df.columns:
+        df[col] = df[col].apply(lambda x: str(x) if pd.notna(x) else "")
+        # 如果儲存格以 =, +, -, @ 開頭，在前面加上單引號以避免被解釋為公式
+        df[col] = df[col].apply(lambda x: f"'{x}" if x and str(x)[0] in ['=', '+', '-', '@'] else x)
+
+    # 建立 Excel 檔案
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Comparison')
+
+        # 自動調整欄寬
+        worksheet = writer.sheets['Comparison']
+        for column in worksheet.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    cell_value = str(cell.value) if cell.value is not None else ""
+                    if len(cell_value) > max_length:
+                        max_length = len(cell_value)
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            worksheet.column_dimensions[column_letter].width = adjusted_width
+
+        # 設定所有儲存格為文字格式
+        from openpyxl.styles import Alignment
+        for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row, min_col=1, max_col=worksheet.max_column):
+            for cell in row:
+                cell.alignment = Alignment(wrap_text=False, vertical='top')
+
+    output.seek(0)
+
+    # 產生檔案名稱
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"PPDB_Comparison_{timestamp}.xlsx"
+
+    # 提供下載
+    ui.download(output.getvalue(), filename)
+    ui.notify(f"已匯出比對結果 / Comparison exported: {filename}", type="positive")
 
 
 def display_comparison_table():
@@ -976,8 +1149,16 @@ def display_comparison_table():
                         else:
                             display_value = str(value) if value not in [None, "", "nan"] else "N/A"
 
+                        # 取得物質名稱（英文和中文）
+                        substance_name = details["identification"].get("Active", f"#{i+1}")
+                        chinese_name = db.get_chinese_name(substance_name)
+                        if chinese_name:
+                            substance_display = f"{substance_name} ({chinese_name})"
+                        else:
+                            substance_display = substance_name
+
                         with ui.card().classes("q-pa-sm").style("min-width: 150px"):
-                            ui.label(details["identification"].get("Active", f"#{i+1}")).classes("text-caption text-grey-7")
+                            ui.label(substance_display).classes("text-caption text-grey-7")
                             ui.label(display_value).classes("text-body1")
 
 
