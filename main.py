@@ -402,7 +402,7 @@ def perform_search(query: str, search_type: str, container: ui.column, paginatio
         return
 
     results = db.search_substances(query, search_type)
-    display_search_results(results, container)
+    display_search_results(results, container, pagination_container)
     # 清除分頁（搜尋結果不分頁，因為已經限制在 100 筆內）
     pagination_container.clear()
 
@@ -511,7 +511,7 @@ def display_all_substances(container: ui.column, pagination_container: ui.column
     create_pagination(pagination_container, page, total_pages, container)
 
 
-def display_search_results(results: List[Dict], container: ui.column):
+def display_search_results(results: List[Dict], container: ui.column, pagination_container: ui.column):
     """顯示搜尋結果"""
     container.clear()
     with container:
@@ -519,7 +519,7 @@ def display_search_results(results: List[Dict], container: ui.column):
 
         if not results:
             ui.label("No results found").classes("text-grey")
-            ui.button("Show All", on_click=lambda: display_all_substances(container)).classes("q-mt-md")
+            ui.button("Show All", on_click=lambda: display_all_substances(container, pagination_container, page=1)).classes("q-mt-md")
             return
 
         columns = [
