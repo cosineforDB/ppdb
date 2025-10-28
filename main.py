@@ -4,6 +4,7 @@ from nicegui import ui
 from typing import List, Dict, Any, Optional
 from io import BytesIO
 from datetime import datetime
+import uuid
 
 
 class FieldMapper:
@@ -305,7 +306,8 @@ class PPDBDatabase:
 # 全域變數
 db = PPDBDatabase()
 field_mapper = FieldMapper()
-selected_for_comparison = []
+# 每個客戶端的比對清單（使用字典，鍵為客戶端 ID）
+comparison_lists = {}
 
 
 @ui.page("/")
@@ -556,7 +558,23 @@ def display_search_results(results: List[Dict], container: ui.column, pagination
 
 def add_to_comparison(substance: Dict[str, Any]):
     """加入比對清單"""
-    global selected_for_comparison
+    from nicegui import app
+    global comparison_lists
+
+    # 獲取當前用戶 ID（使用 app.storage.user，基於 cookies，在頁面間持久）
+    if 'user_id' not in app.storage.user:
+        app.storage.user['user_id'] = str(uuid.uuid4())
+
+    user_id = app.storage.user['user_id']
+    print(f"DEBUG add_to_comparison: user_id = {user_id}")
+
+    # 從字典中取得該用戶的比對清單
+    if user_id not in comparison_lists:
+        comparison_lists[user_id] = []
+        print(f"DEBUG add_to_comparison: Created new list for user_id = {user_id}")
+
+    selected_for_comparison = comparison_lists[user_id]
+    print(f"DEBUG add_to_comparison: Current list length = {len(selected_for_comparison)}")
 
     if len(selected_for_comparison) >= 8:
         ui.notify("Maximum 8 substances can be compared", type="warning")
@@ -567,6 +585,9 @@ def add_to_comparison(substance: Dict[str, Any]):
         return
 
     selected_for_comparison.append(substance)
+    print(f"DEBUG add_to_comparison: Added {substance['name']}, new length = {len(selected_for_comparison)}")
+    print(f"DEBUG add_to_comparison: All comparison_lists keys = {list(comparison_lists.keys())}")
+    print(f"DEBUG add_to_comparison: comparison_lists[{user_id}] = {[s['name'] for s in comparison_lists[user_id]]}")
     ui.notify(f"Added {substance['name']} to comparison ({len(selected_for_comparison)}/8)", type="positive")
 
 
@@ -806,6 +827,8 @@ def format_ecotox_value(db_field: str, value: Any, details_dict: Dict[str, Any])
 @ui.page("/compare")
 def compare_page():
     """比對頁面"""
+    from nicegui import app
+    global comparison_lists
     ui.dark_mode().enable()
 
     with ui.header().classes("bg-primary text-white"):
@@ -819,7 +842,19 @@ def compare_page():
     with ui.column().classes("w-full q-pa-md"):
         ui.label("Compare Substances").classes("text-h4 q-mb-md")
 
-        global selected_for_comparison
+        # 獲取當前用戶 ID（使用 app.storage.user，基於 cookies）
+        if 'user_id' not in app.storage.user:
+            app.storage.user['user_id'] = str(uuid.uuid4())
+
+        user_id = app.storage.user['user_id']
+        print(f"DEBUG compare_page: user_id = {user_id}")
+        print(f"DEBUG compare_page: All comparison_lists keys = {list(comparison_lists.keys())}")
+
+        # 從字典中取得該用戶的比對清單
+        selected_for_comparison = comparison_lists.get(user_id, [])
+        print(f"DEBUG compare_page: Found {len(selected_for_comparison)} items for user_id = {user_id}")
+        if selected_for_comparison:
+            print(f"DEBUG compare_page: Items = {[s['name'] for s in selected_for_comparison]}")
 
         if not selected_for_comparison:
             with ui.card().classes("w-full q-pa-lg text-center"):
@@ -856,14 +891,32 @@ def compare_page():
 
 def clear_comparison():
     """清除比對清單"""
-    global selected_for_comparison
-    selected_for_comparison = []
+    from nicegui import app
+    global comparison_lists
+
+    # 獲取當前用戶 ID
+    if 'user_id' in app.storage.user:
+        user_id = app.storage.user['user_id']
+        if user_id in comparison_lists:
+            comparison_lists[user_id] = []
+
     ui.navigate.to("/compare")
 
 
 def export_comparison_to_excel():
     """匯出比對結果到 Excel"""
-    global selected_for_comparison, field_mapper
+    from nicegui import app
+    global field_mapper, comparison_lists
+
+    # 獲取當前用戶 ID
+    if 'user_id' not in app.storage.user:
+        ui.notify("錯誤：無法識別用戶 / Error: Cannot identify user", type="negative")
+        return
+
+    user_id = app.storage.user['user_id']
+
+    # 從字典中取得該用戶的比對清單
+    selected_for_comparison = comparison_lists.get(user_id, [])
 
     if len(selected_for_comparison) < 2:
         ui.notify("請至少選擇 2 個物質進行比對 / Please select at least 2 substances to compare", type="warning")
@@ -1026,7 +1079,18 @@ def export_comparison_to_excel():
 
 def display_comparison_table():
     """顯示比對表格"""
-    global selected_for_comparison, field_mapper
+    from nicegui import app
+    global field_mapper, comparison_lists
+
+    # 獲取當前用戶 ID
+    if 'user_id' not in app.storage.user:
+        ui.label("錯誤：無法識別用戶 / Error: Cannot identify user").classes("text-negative")
+        return
+
+    user_id = app.storage.user['user_id']
+
+    # 從字典中取得該用戶的比對清單
+    selected_for_comparison = comparison_lists.get(user_id, [])
 
     with ui.card().classes("w-full q-pa-md"):
         ui.label("Comparison Table / 比對表格").classes("text-h6 q-mb-md")
@@ -1166,7 +1230,17 @@ def main():
     """主程式進入點"""
     import os
     port = int(os.environ.get("PORT", 8080))
-    ui.run(title="PPDB - Pesticide Properties Database", host='0.0.0.0', port=port, reload=False, show=False)
+    # storage_secret 用於加密 app.storage.user 的 cookies
+    # 在生產環境中，應該使用環境變量設置一個安全的隨機字符串
+    storage_secret = os.environ.get("STORAGE_SECRET", "ppdb-default-secret-change-in-production")
+    ui.run(
+        title="PPDB - Pesticide Properties Database",
+        host='0.0.0.0',
+        port=port,
+        reload=False,
+        show=False,
+        storage_secret=storage_secret
+    )
 
 
 if __name__ == "__main__":
