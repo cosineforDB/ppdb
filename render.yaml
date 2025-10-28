@@ -10,3 +10,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: STORAGE_SECRET
+        value: Jy6QXfAjlTcpK7ACXzA1DhDkI2TFI36vnc6xmQBJ7ZM
+      - key: PORT
+        value: 8080
